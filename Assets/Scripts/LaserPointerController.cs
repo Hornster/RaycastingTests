@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using Assets.Scripts;
 using UnityEngine;
+using Color = UnityEngine.Color;
 
 public class LaserPointerController : MonoBehaviour
 {
@@ -10,11 +12,21 @@ public class LaserPointerController : MonoBehaviour
     private float rotationSpeed;
     [SerializeField]
     private float rayLength;
+    [SerializeField]
+    private float colliderWidth;
+    [SerializeField]
+    private float colliderHeight;
+
+    [SerializeField] private Transform markerTransform;
+
+    private RectangleF collider;
+
+    private CastRays castRays = CastRays.GetInstance();
     
     // Start is called before the first frame update
     void Start()
     {
-        
+        collider = new RectangleF(gameObject.transform.position.x, gameObject.transform.position.y, colliderWidth, colliderHeight);
     }
 
     // Update is called once per frame
@@ -27,8 +39,14 @@ public class LaserPointerController : MonoBehaviour
 
         if (Input.GetKeyUp(KeyCode.Mouse0))
         {
+            Vector2 newMarkerPosition;
+            List<LaserPartData> laserParts;
             var segments = PerformRaycasts();
-            DrawDebugLines(segments);
+            DrawDebugLines(segments, Color.red);
+            (laserParts, newMarkerPosition) = PerformRectangleCasts();
+            DrawDebugLines(laserParts, Color.white);
+
+            markerTransform.position = new Vector3(newMarkerPosition.x, newMarkerPosition.y);
         }
 
         DrawAimingLaser();
@@ -43,9 +61,9 @@ public class LaserPointerController : MonoBehaviour
         //for now, only from this object.
         Debug.DrawRay(gameObject.transform.position, startDirection, Color.green, 0.0f, false);
     }
-    private void DrawDebugLines(List<LaserPartData> laserSegments)
+    private void DrawDebugLines(List<LaserPartData> laserSegments, Color color)
     {
-        laserSegments.ForEach(seg => Debug.DrawRay(seg.StartPoint, seg.Direction*(float)seg.Length, Color.red, 3.0f, false));
+        laserSegments.ForEach(seg => Debug.DrawRay(seg.StartPoint, seg.Direction*(float)seg.Length, color, 3.0f, false));
         /*
         var startDirection = gameObject.transform.rotation.eulerAngles;
         startDirection.x = (float)Math.Cos(Mathf.Deg2Rad * startDirection.z)* rayLength;
@@ -81,7 +99,12 @@ public class LaserPointerController : MonoBehaviour
     private List<LaserPartData> PerformRaycasts()
     {
         var direction = GetPointingVector();
-        return CastRays.GetLaserPath(gameObject.transform.position, direction, rayLength);
+        return castRays.GetLaserPath(gameObject.transform.position, direction, rayLength);
+    }
+
+    private (List<LaserPartData>, Vector2) PerformRectangleCasts()
+    {
+        return castRays.ProjectRectangle(collider, GetPointingVector(), rayLength);
     }
 }
 

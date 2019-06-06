@@ -12,5 +12,10 @@ namespace Assets.Scripts
         public Vector2 StartPoint { get; set; }
         public Vector2 Direction { get; set; }
         public double Length { get; set; }
+
+        public Vector2 GetEndPoint()
+        {
+            return StartPoint + Direction * (float)Length;
+        }
     }
 }
